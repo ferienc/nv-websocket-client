@@ -18,8 +18,10 @@ package com.neovisionaries.ws.client;
 
 import static com.neovisionaries.ws.client.WebSocketState.CLOSED;
 import static com.neovisionaries.ws.client.WebSocketState.CLOSING;
+
 import java.io.IOException;
 import java.util.LinkedList;
+
 import com.neovisionaries.ws.client.StateManager.CloseInitiator;
 
 
@@ -38,9 +40,9 @@ class WritingThread extends WebSocketThread
     private boolean mStopped;
 
 
-    public WritingThread(WebSocket websocket)
+    public WritingThread(WebSocket websocket, IThreadNameGenerator nameGenerator)
     {
-        super("WritingThread", websocket, ThreadType.WRITING_THREAD);
+        super(nameGenerator.generateName(), websocket, ThreadType.WRITING_THREAD);
 
         mFrames = new LinkedList<WebSocketFrame>();
         mPMCE   = websocket.getPerMessageCompressionExtension();

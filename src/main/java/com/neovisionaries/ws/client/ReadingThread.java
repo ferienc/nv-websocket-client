@@ -24,6 +24,7 @@ import static com.neovisionaries.ws.client.WebSocketOpcode.PONG;
 import static com.neovisionaries.ws.client.WebSocketOpcode.TEXT;
 import static com.neovisionaries.ws.client.WebSocketState.CLOSED;
 import static com.neovisionaries.ws.client.WebSocketState.CLOSING;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InterruptedIOException;
@@ -32,6 +33,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
+
 import com.neovisionaries.ws.client.StateManager.CloseInitiator;
 
 
@@ -48,9 +50,9 @@ class ReadingThread extends WebSocketThread
     private boolean mNotWaitForCloseFrame;
 
 
-    public ReadingThread(WebSocket websocket)
+    public ReadingThread(WebSocket websocket, IThreadNameGenerator nameGenerator)
     {
-        super("ReadingThread", websocket, ThreadType.READING_THREAD);
+        super(nameGenerator.generateName(), websocket, ThreadType.READING_THREAD);
 
         mPMCE = websocket.getPerMessageCompressionExtension();
     }

@@ -21,6 +21,7 @@ import static com.neovisionaries.ws.client.WebSocketState.CLOSING;
 import static com.neovisionaries.ws.client.WebSocketState.CONNECTING;
 import static com.neovisionaries.ws.client.WebSocketState.CREATED;
 import static com.neovisionaries.ws.client.WebSocketState.OPEN;
+
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
@@ -32,6 +33,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
+
 import com.neovisionaries.ws.client.StateManager.CloseInitiator;
 
 
@@ -1092,6 +1094,20 @@ import com.neovisionaries.ws.client.StateManager.CloseInitiator;
 public class WebSocket
 {
     private static final long DEFAULT_CLOSE_DELAY = 10 * 1000L;
+    
+    private final IThreadNameGenerator READING_THREAD_NAME_GENERATOR = new IThreadNameGenerator() {
+		public String generateName() {
+			return "ReadingThread";
+		}
+	};
+	
+	private final IThreadNameGenerator WRITING_THREAD_NAME_GENERATOR = new IThreadNameGenerator() {
+		public String generateName() {
+			return "WritingThread";
+		}
+	};
+    
+    
     private final WebSocketFactory mWebSocketFactory;
     private final SocketConnector mSocketConnector;
     private final StateManager mStateManager;
@@ -1122,6 +1138,8 @@ public class WebSocket
     private WebSocketFrame mServerCloseFrame;
     private WebSocketFrame mClientCloseFrame;
     private PerMessageCompressionExtension mPerMessageCompressionExtension;
+    private IThreadNameGenerator readingThreadNameGenerator = READING_THREAD_NAME_GENERATOR;
+	private IThreadNameGenerator writingThreadNameGenerator = WRITING_THREAD_NAME_GENERATOR;
 
 
     WebSocket(WebSocketFactory factory, boolean secure, String userInfo,
@@ -1524,8 +1542,41 @@ public class WebSocket
         return this;
     }
 
-
     /**
+     * Set the interface generating name for reading thread of this socket.
+     *
+     * @param userInfo        
+     *
+     * @return
+     *         {@code this} object.
+     */
+	public WebSocket setReadingThreadNameGenerator(IThreadNameGenerator readingThreadNameGenerator) {
+		if (readingThreadNameGenerator == null) {
+			throw new IllegalArgumentException("readingThreadNameGenerator cannot be null");
+		}
+		this.readingThreadNameGenerator = readingThreadNameGenerator;
+		return this;
+	}
+
+
+	/**
+     * Set the interface generating name for wrting thread of this socket.
+     *
+     * @param userInfo        
+     *
+     * @return
+     *         {@code this} object.
+     */
+	public WebSocket setWritingThreadNameGenerator(IThreadNameGenerator writingThreadNameGenerator) {
+		if (writingThreadNameGenerator == null) {
+			throw new IllegalArgumentException("writingThreadNameGenerator cannot be null");
+		}
+		this.writingThreadNameGenerator = writingThreadNameGenerator;
+		return this;
+	}
+
+
+	/**
      * Set the credentials to connect to the WebSocket endpoint.
      *
      * @param id
@@ -3413,8 +3464,8 @@ public class WebSocket
      */
     private void startThreads()
     {
-        ReadingThread readingThread = new ReadingThread(this);
-        WritingThread writingThread = new WritingThread(this);
+        ReadingThread readingThread = new ReadingThread(this, readingThreadNameGenerator);
+        WritingThread writingThread = new WritingThread(this, writingThreadNameGenerator);
 
         synchronized (mThreadsLock)
         {
